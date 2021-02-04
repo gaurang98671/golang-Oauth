@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -48,14 +49,23 @@ func handleCallback(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(os.Stdout, "could not parse JSON response: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 	}
-
+	cookie := http.Cookie{Name: "token", Value: token.AccessToken, Expires: time.Now().Add(60 * time.Second), HttpOnly: true}
+	http.SetCookie(w, &cookie)
 	fmt.Fprint(w, " Token: "+token.AccessToken)
 
 }
 
+func serveHome(w http.ResponseWriter, r *http.Request) {
+	token, err := r.Cookie("token")
+	if err != nil {
+		http.Redirect(w, r, "/login/github", http.StatusTemporaryRedirect)
+	}
+	fmt.Fprint(w, token)
+}
 func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/login/github", loginWithGithub)
 	router.HandleFunc("/callback", handleCallback)
+	router.HandleFunc("/", serveHome)
 	http.ListenAndServe(":8080", router)
 }
