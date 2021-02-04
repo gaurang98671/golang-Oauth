@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -26,7 +27,7 @@ func loginWithGithub(w http.ResponseWriter, r *http.Request) {
 
 func handleCallback(w http.ResponseWriter, r *http.Request) {
 	httpClient := http.Client{}
-
+	log.Println("Inside login method")
 	code := r.FormValue("code")
 	reqURL := fmt.Sprintf("https://github.com/login/oauth/access_token?client_id=%s&client_secret=%s&code=%s", clientID, clientSecret, code)
 	req, err := http.NewRequest(http.MethodPost, reqURL, nil)
@@ -49,18 +50,24 @@ func handleCallback(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(os.Stdout, "could not parse JSON response: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 	}
+
 	cookie := http.Cookie{Name: "token", Value: token.AccessToken, Expires: time.Now().Add(60 * time.Second), HttpOnly: true}
 	http.SetCookie(w, &cookie)
-	fmt.Fprint(w, " Token: "+token.AccessToken)
+
+	http.Redirect(w, r, "/", 301)
 
 }
 
 func serveHome(w http.ResponseWriter, r *http.Request) {
 	token, err := r.Cookie("token")
 	if err != nil {
+		log.Println("no token found")
 		http.Redirect(w, r, "/login/github", http.StatusTemporaryRedirect)
+	} else {
+		log.Println("token found")
+		fmt.Fprint(w, token.Value)
 	}
-	fmt.Fprint(w, token)
+
 }
 func main() {
 	router := mux.NewRouter()
