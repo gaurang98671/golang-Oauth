@@ -51,7 +51,7 @@ func handleCallback(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}
 
-	cookie := http.Cookie{Name: "token", Value: token.AccessToken, Expires: time.Now().Add(60 * time.Second), HttpOnly: true}
+	cookie := http.Cookie{Name: "token", Value: token.AccessToken, Expires: time.Now().Add(60 * time.Minute), HttpOnly: true}
 	http.SetCookie(w, &cookie)
 
 	http.Redirect(w, r, "/", 301)
